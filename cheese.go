@@ -2,6 +2,14 @@ package main
 
 import "fmt"
 
+type circle struct {
+	name       string
+	num_rows   int
+	num_cols   int
+	char_avail []int
+	edges      [][]string
+}
+
 func main() {
 	var circle_options = [...]string{
 		`
