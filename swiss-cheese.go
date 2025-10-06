@@ -1,6 +1,10 @@
 package main
 
-import "fmt"
+import (
+	"bufio"
+	"fmt"
+	"os"
+)
 
 type circle struct {
 	name       string
@@ -11,7 +15,9 @@ type circle struct {
 }
 
 func main() {
-	var circle_options = [...]string{
+	var c circle
+	fmt.Println(c)
+	circle_options := [...]string{
 		`
                    ### *** *** ###
                *##                 ##*
@@ -70,4 +76,27 @@ func main() {
 		fmt.Println(circle_options[i])
 	}
 	fmt.Println("Hello, World!")
+
+	// Reading in standard in
+	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Split(bufio.ScanBytes)
+
+	var input []byte
+	for scanner.Scan() {
+		input = append(input, scanner.Bytes()...)
+	}
+
+	var lines []string
+	const lineLength = 80
+
+	for i := 0; i < len(input); i += lineLength {
+		end := i + lineLength
+		if end > len(input) {
+			end = len(input)
+		}
+		lines = append(lines, string(input[i:end]))
+	}
+	for i, line := range lines {
+		fmt.Printf("line %d, %q\n", i, line)
+	}
 }
