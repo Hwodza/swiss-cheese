@@ -13,7 +13,7 @@ import (
 const (
 	INIT_SLICE_HEIGHT = 35
 	SLICE_LENGTH      = 80
-	NUM_CIRCLES       = 2
+	NUM_CIRCLES       = 3
 )
 
 type circle struct {
@@ -74,22 +74,22 @@ func addHole(hole row, slice [][]bool, sr int, sc int) [][]bool {
 	return slice
 }
 
-func bfs(slice [][]bool, sr, sc int) int {
+func bfs(slice [][]bool, sr, sc int) float64 {
 	rows := len(slice)
 	if rows == 0 {
 		log.Fatal("BFS given an empty array")
 	}
-	if sr < 0 || sc >= rows || sc < 0 || sc >= SLICE_LENGTH {
+	if sr < 0 || sr >= rows || sc < 0 || sc >= SLICE_LENGTH {
 		log.Fatal("BFS starting point out of bounds")
 	}
-	dirs := [][2]int{{-1, 0}, {1, 0}, {0, 1}, {0, 1}}
+	dirs := [][2]int{{-1, 0}, {1, 0}, {0, 1}, {0, -1}}
 
 	visited := make([][]bool, rows)
 	for i := range visited {
 		visited[i] = make([]bool, SLICE_LENGTH)
 	}
 
-	queue := [][2]int{{sc, sc}}
+	queue := [][2]int{{sr, sc}}
 	visited[sr][sc] = true
 
 	for len(queue) > 0 {
@@ -97,7 +97,7 @@ func bfs(slice [][]bool, sr, sc int) int {
 		queue = queue[1:]
 
 		if slice[r][c] {
-			return int(math.Abs(float64(sr-r))) + int(math.Abs(float64(sc-c)))
+			return math.Abs(float64(sr-r)) + math.Abs(float64(sc-c))
 		}
 
 		for _, d := range dirs {
@@ -122,6 +122,25 @@ func createInitSlice(holes []row) [][]bool {
 	nHole := rand.Intn(NUM_CIRCLES)
 	slice[sr][sc] = true
 	slice = addHole(holes[nHole], slice, sr, sc)
+	maxDistance := float64(SLICE_LENGTH / .02)
+	for i := range INIT_SLICE_HEIGHT - 1 {
+		for j := range SLICE_LENGTH - 1 {
+			if slice[i][j] {
+				continue
+			}
+			distance := bfs(slice, i, j)
+			prob := distance / maxDistance
+
+			if prob > 1 {
+				prob = 1
+			}
+			if rand.Float64() < prob {
+				slice[i][j] = true
+				nHole = rand.Intn(NUM_CIRCLES)
+				slice = addHole(holes[nHole], slice, i, j)
+			}
+		}
+	}
 
 	return slice
 }
@@ -141,6 +160,7 @@ func printSlice(slice [][]bool) {
 
 func main() {
 	holes := []row{
+		{[]empty_range{{0, 2}, {-1, 3}, {0, 2}}},
 		{[]empty_range{{0, 2}, {-1, 3}, {0, 2}}},
 		{[]empty_range{{0, 2}, {-4, 6}, {-8, 10}, {-10, 12}, {-11, 13}, {-12, 14}, {-12, 14}, {-12, 14}, {-11, 13}, {-10, 12}, {-8, 10}, {-4, 6}, {0, 2}}},
 	}
