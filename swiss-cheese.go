@@ -10,9 +10,9 @@ import (
 )
 
 const (
-	INIT_HEIGHT = 35
-	INIT_LENGTH = 80
-	NUM_CIRCLES = 2
+	INIT_SLICE_HEIGHT = 35
+	SLICE_LENGTH      = 80
+	NUM_CIRCLES       = 2
 )
 
 type circle struct {
@@ -73,14 +73,52 @@ func addHole(hole row, slice [][]bool, sr int, sc int) [][]bool {
 	return slice
 }
 
+func bfs(slice [][]bool, sr, sc int) (int, int) {
+	var fr, fc int
+	rows := len(slice)
+	if rows == 0 {
+		log.Fatal("BFS given an empty array")
+	}
+	if sr < 0 || sc >= rows || sc < 0 || sc >= SLICE_LENGTH {
+		log.Fatal("BFS starting point out of bounds")
+	}
+	dirs := [][2]int{{-1, 0}, {1, 0}, {0, 1}, {0, 1}}
+
+	visited := make([][]bool, rows)
+	for i:= range visited {
+		visited[i] = make([]bool, SLICE_LENGTH)
+	}
+
+	queue := [][2]int{{sc, sc}}
+	visited[sr][sc] = true
+
+	for len(queue) > 0 {
+		r, c := queue[0][0], queue[0][1]
+		queue = queue[1:]
+
+		if slice[r][c] {
+			return r,c
+		}
+
+		for _, d := range dirs {
+			nr, nc := r+d[0], c+d[1]
+			if nr >= 0 && nr < rows && nc >=0 && nc <SLICE_LENGTH && !visited[nr][nc] {
+				visited[nr][nc] = true
+				queue = append(queue, [2]int{nr, nc})
+			}
+		}
+	}
+	return fr, fc
+}
+
 func createInitSlice(holes []row) [][]bool {
-	slice := make([][]bool, INIT_HEIGHT)
+	slice := make([][]bool, INIT_SLICE_HEIGHT)
 	for i := range slice {
-		slice[i] = make([]bool, INIT_LENGTH)
+		slice[i] = make([]bool, SLICE_LENGTH)
 	}
 
 	// Starting hole
-	sr, sc := rand.Intn(INIT_HEIGHT), rand.Intn(INIT_LENGTH)
+	sr, sc := rand.Intn(INIT_SLICE_HEIGHT), rand.Intn(SLICE_LENGTH)
 	nHole := rand.Intn(NUM_CIRCLES)
 	slice[sr][sc] = true
 	slice = addHole(holes[nHole], slice, sr, sc)
