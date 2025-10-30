@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"log"
+	"math"
 	"math/rand"
 	"os"
 	"strings"
@@ -73,8 +74,7 @@ func addHole(hole row, slice [][]bool, sr int, sc int) [][]bool {
 	return slice
 }
 
-func bfs(slice [][]bool, sr, sc int) (int, int) {
-	var fr, fc int
+func bfs(slice [][]bool, sr, sc int) int {
 	rows := len(slice)
 	if rows == 0 {
 		log.Fatal("BFS given an empty array")
@@ -85,7 +85,7 @@ func bfs(slice [][]bool, sr, sc int) (int, int) {
 	dirs := [][2]int{{-1, 0}, {1, 0}, {0, 1}, {0, 1}}
 
 	visited := make([][]bool, rows)
-	for i:= range visited {
+	for i := range visited {
 		visited[i] = make([]bool, SLICE_LENGTH)
 	}
 
@@ -97,18 +97,18 @@ func bfs(slice [][]bool, sr, sc int) (int, int) {
 		queue = queue[1:]
 
 		if slice[r][c] {
-			return r,c
+			return int(math.Abs(float64(sr-r))) + int(math.Abs(float64(sc-c)))
 		}
 
 		for _, d := range dirs {
 			nr, nc := r+d[0], c+d[1]
-			if nr >= 0 && nr < rows && nc >=0 && nc <SLICE_LENGTH && !visited[nr][nc] {
+			if nr >= 0 && nr < rows && nc >= 0 && nc < SLICE_LENGTH && !visited[nr][nc] {
 				visited[nr][nc] = true
 				queue = append(queue, [2]int{nr, nc})
 			}
 		}
 	}
-	return fr, fc
+	return SLICE_LENGTH
 }
 
 func createInitSlice(holes []row) [][]bool {
