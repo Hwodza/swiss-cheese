@@ -8,12 +8,15 @@ import (
 	"math/rand"
 	"os"
 	"strings"
+
+	"golang.org/x/term"
 )
 
 const (
-	INIT_SLICE_HEIGHT = 35
-	SLICE_LENGTH      = 80
-	NUM_CIRCLES       = 2
+	INIT_SLICE_HEIGHT  = 35
+	INIT_BUFFER_HEIGHT = 70
+	SLICE_LENGTH       = 80
+	NUM_CIRCLES        = 2
 )
 
 type circle struct {
@@ -31,7 +34,7 @@ type empty_range struct {
 
 type hole struct {
 	empty []empty_range
-	prob float64
+	prob  float64
 }
 
 func cheeseify(s string) string {
@@ -139,7 +142,7 @@ func createInitSlice(holes []hole) [][]bool {
 	sr, sc := rand.Intn(INIT_SLICE_HEIGHT), rand.Intn(SLICE_LENGTH)
 	slice[sr][sc] = true
 	slice = addHole(chooseHole(holes), slice, sr, sc)
-	maxDistance := float64(SLICE_LENGTH / 1)
+	maxDistance := float64(SLICE_LENGTH / .01)
 	for i := range INIT_SLICE_HEIGHT - 1 {
 		for j := range SLICE_LENGTH - 1 {
 			if slice[i][j] {
@@ -174,11 +177,30 @@ func printSlice(slice [][]bool) {
 	}
 }
 
+func getTerminalWidth() int {
+	width, _, err := term.GetSize(int(os.Stdout.Fd()))
+	if err != nil {
+		return 80
+	}
+	return width
+}
+
+func createInitBuffer(holes []hole) [][]bool {
+	buffer := make([][]bool, INIT_BUFFER_HEIGHT)
+	termWidth := getTerminalWidth()
+	for i := range buffer {
+		buffer[i] = make([]bool, termWidth)
+	}
+	// sr, sc := rand.Intn(INIT_BUFFER_HEIGHT), rand.Intn(termWidth)
+	return buffer
+}
+
 func main() {
 	holes := []hole{
 		{[]empty_range{{0, 2}, {-1, 3}, {0, 2}}, .8},
 		{[]empty_range{{0, 2}, {-4, 6}, {-8, 10}, {-10, 12}, {-11, 13}, {-12, 14}, {-12, 14}, {-12, 14}, {-11, 13}, {-10, 12}, {-8, 10}, {-4, 6}, {0, 2}}, .4},
 	}
+
 	slice := createInitSlice(holes)
 	printSlice(slice)
 
