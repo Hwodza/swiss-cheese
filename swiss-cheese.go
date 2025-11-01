@@ -13,7 +13,7 @@ import (
 const (
 	INIT_SLICE_HEIGHT = 35
 	SLICE_LENGTH      = 80
-	NUM_CIRCLES       = 3
+	NUM_CIRCLES       = 2
 )
 
 type circle struct {
@@ -29,8 +29,9 @@ type empty_range struct {
 	end   int
 }
 
-type row struct {
+type hole struct {
 	empty []empty_range
+	prob float64
 }
 
 func cheeseify(s string) string {
@@ -64,7 +65,7 @@ func cheeseify(s string) string {
 	return b.String()
 }
 
-func addHole(hole row, slice [][]bool, sr int, sc int) [][]bool {
+func addHole(hole hole, slice [][]bool, sr int, sc int) [][]bool {
 	for i := sr; i < min(len(slice), len(hole.empty)+sr); i++ {
 		for j := max(hole.empty[i-sr].start+sc, 0); j < (min(len(slice[i]), hole.empty[i-sr].end+sc)); j++ {
 			slice[i][j] = true
@@ -111,7 +112,24 @@ func bfs(slice [][]bool, sr, sc int) float64 {
 	return SLICE_LENGTH
 }
 
-func createInitSlice(holes []row) [][]bool {
+func chooseHole(holes []hole) hole {
+	total := 0.0
+	for _, hole := range holes {
+		total += hole.prob
+	}
+	r := rand.Float64() * total
+
+	accum := 0.0
+	for _, hole := range holes {
+		accum += hole.prob
+		if r <= accum {
+			return hole
+		}
+	}
+	return holes[0]
+}
+
+func createInitSlice(holes []hole) [][]bool {
 	slice := make([][]bool, INIT_SLICE_HEIGHT)
 	for i := range slice {
 		slice[i] = make([]bool, SLICE_LENGTH)
@@ -119,10 +137,9 @@ func createInitSlice(holes []row) [][]bool {
 
 	// Starting hole
 	sr, sc := rand.Intn(INIT_SLICE_HEIGHT), rand.Intn(SLICE_LENGTH)
-	nHole := rand.Intn(NUM_CIRCLES)
 	slice[sr][sc] = true
-	slice = addHole(holes[nHole], slice, sr, sc)
-	maxDistance := float64(SLICE_LENGTH / .02)
+	slice = addHole(chooseHole(holes), slice, sr, sc)
+	maxDistance := float64(SLICE_LENGTH / 1)
 	for i := range INIT_SLICE_HEIGHT - 1 {
 		for j := range SLICE_LENGTH - 1 {
 			if slice[i][j] {
@@ -136,8 +153,7 @@ func createInitSlice(holes []row) [][]bool {
 			}
 			if rand.Float64() < prob {
 				slice[i][j] = true
-				nHole = rand.Intn(NUM_CIRCLES)
-				slice = addHole(holes[nHole], slice, i, j)
+				slice = addHole(chooseHole(holes), slice, i, j)
 			}
 		}
 	}
@@ -159,10 +175,9 @@ func printSlice(slice [][]bool) {
 }
 
 func main() {
-	holes := []row{
-		{[]empty_range{{0, 2}, {-1, 3}, {0, 2}}},
-		{[]empty_range{{0, 2}, {-1, 3}, {0, 2}}},
-		{[]empty_range{{0, 2}, {-4, 6}, {-8, 10}, {-10, 12}, {-11, 13}, {-12, 14}, {-12, 14}, {-12, 14}, {-11, 13}, {-10, 12}, {-8, 10}, {-4, 6}, {0, 2}}},
+	holes := []hole{
+		{[]empty_range{{0, 2}, {-1, 3}, {0, 2}}, .8},
+		{[]empty_range{{0, 2}, {-4, 6}, {-8, 10}, {-10, 12}, {-11, 13}, {-12, 14}, {-12, 14}, {-12, 14}, {-11, 13}, {-10, 12}, {-8, 10}, {-4, 6}, {0, 2}}, .4},
 	}
 	slice := createInitSlice(holes)
 	printSlice(slice)
@@ -180,44 +195,7 @@ func main() {
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
-	//
-	// cheeseSlice := []row{
-	// 	{[]empty_range{{75, 78}}},
-	// 	{[]empty_range{{74, 79}}},
-	// 	{[]empty_range{{5, 8}, {75, 78}}},
-	// 	{[]empty_range{{4, 9}}},
-	// 	{[]empty_range{{5, 8}, {28, 31}, {59, 60}}},
-	// 	{[]empty_range{{27, 32}, {55, 64}}},
-	// 	{[]empty_range{{28, 31}, {51, 69}}},
-	// 	{[]empty_range{{49, 71}}},
-	// 	{[]empty_range{{48, 72}}},
-	// 	{[]empty_range{{47, 73}}},
-	// 	{[]empty_range{{47, 73}}},
-	// 	{[]empty_range{{47, 73}}},
-	// 	{[]empty_range{{18, 19}, {48, 72}}},
-	// 	{[]empty_range{{14, 25}, {49, 71}}},
-	// 	{[]empty_range{{10, 29}, {51, 69}}},
-	// 	{[]empty_range{{8, 31}, {55, 64}}},
-	// 	{[]empty_range{{7, 32}, {59, 60}}},
-	// 	{[]empty_range{{6, 33}}},
-	// 	{[]empty_range{{6, 33}, {69, 72}}},
-	// 	{[]empty_range{{6, 33}, {68, 73}}},
-	// 	{[]empty_range{{7, 32}, {69, 72}}},
-	// 	{[]empty_range{{8, 31}}},
-	// 	{[]empty_range{{10, 29}, {38, 41}}},
-	// 	{[]empty_range{{14, 25}, {37, 42}}},
-	// 	{[]empty_range{{18, 19}, {38, 41}, {66, 67}}},
-	// 	{[]empty_range{{62, 71}}},
-	// 	{[]empty_range{{58, 75}}},
-	// 	{[]empty_range{{56, 77}}},
-	// 	{[]empty_range{{55, 78}}},
-	// 	{[]empty_range{{54, 79}}},
-	// 	{[]empty_range{{14, 17}, {54, 79}}},
-	// 	{[]empty_range{{13, 18}, {54, 79}}},
-	// 	{[]empty_range{{14, 17}, {55, 78}}},
-	// 	{[]empty_range{{56, 77}}},
-	// 	{[]empty_range{{58, 75}}},
-	// }
+
 	// for i, line := range cheeseSlice {
 	// 	out := "################################################################################"
 	//
