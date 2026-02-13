@@ -1,15 +1,21 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 )
 
 func main() {
-	data, err := os.ReadFile("lorem.txt")
+	file, err := os.Open("lorem.txt")
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Print(string(data))
+	scanner := bufio.NewScanner(file)
+
+	for scanner.Scan() {
+		fmt.Println(scanner.Text())
+	}
+
 }
