@@ -3,32 +3,58 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"math/rand"
 	"os"
 	"strings"
 )
 
 const (
-	SWISS_CHEESE_HEIGHT = 35
-	SWISS_CHEESE_WIDTH  = 80
+	swissCheeseHeight = 35
+	swissCheeseWidth  = 80
 )
 
-func createSwissSlice(cheeseCH chan []bool) {
-	cheeseSlice := make([][]bool, SWISS_CHEESE_HEIGHT)
-	for i := range cheeseSlice {
-		cheeseSlice[i] = make([]bool, SWISS_CHEESE_WIDTH)
-	}
-	for i := range cheeseSlice {
-		cheeseCH <- cheeseSlice[i]
+type Dimension struct {
+	left, right int
+}
+
+type Hole struct {
+	prob       float64
+	dimensions []Dimension
+}
+
+type swissCheeseSlice struct {
+	slice [swissCheeseHeight][swissCheeseWidth]bool
+}
+
+func (cheeseSlice swissCheeseSlice) createSwissSlice(cheeseCH chan []bool) {
+
+	// Location for starting hole
+	sr, sc := rand.Intn(swissCheeseHeight), rand.Intn(swissCheeseWidth)
+	cheeseSlice.slice[sr][sc] = true
+	for i := range cheeseSlice.slice {
+		cheeseCH <- cheeseSlice.slice[i][:]
 	}
 	close(cheeseCH)
 }
 
-func generateLine(inputCH chan string, cheeseCH chan []bool) {
+func generateCheeseOverlay(overlayCH chan []bool) {
+	slice := swissCheeseSlice{}
+	cheeseCH := make(chan []bool)
+	go slice.createSwissSlice(cheeseCH)
+	for v := range cheeseCH {
+		overlayCH <- v
+	}
+	close(overlayCH)
+
+}
+
+// Takes in input text (inputCH) and cheese slice by line (overlayCH), then combines the two by overwriting text with cheese
+func generateLine(inputCH chan string, overlayCH chan []bool) {
 	out := "                                                                                "
 	for i := range inputCH {
 		runes := []rune(i)
 		out = ""
-		cheese := <-cheeseCH
+		cheese := <-overlayCH
 		if cheese == nil {
 			fmt.Println(i)
 			continue
@@ -49,6 +75,7 @@ func generateLine(inputCH chan string, cheeseCH chan []bool) {
 	}
 }
 
+// Function that will color cheese to orange, works by checking for #, and then coloring them
 func cheeseify(s string) string {
 	const (
 		yellow = "\033[33m"
@@ -56,24 +83,24 @@ func cheeseify(s string) string {
 	)
 
 	var b strings.Builder
-	inHash := false
+	inSwissSlice := false
 
 	for _, ch := range s {
 		if ch == '#' {
-			if !inHash {
+			if !inSwissSlice {
 				b.WriteString(yellow)
-				inHash = true
+				inSwissSlice = true
 			}
 		} else {
-			if inHash {
+			if inSwissSlice {
 				b.WriteString(reset)
-				inHash = false
+				inSwissSlice = false
 			}
 		}
 		b.WriteRune(ch)
 	}
 
-	if inHash {
+	if inSwissSlice {
 		b.WriteString(reset)
 	}
 
@@ -87,7 +114,7 @@ func main() {
 	}
 
 	inputCH := make(chan string)
-	cheeseCH := make(chan []bool)
+	overlayCH := make(chan []bool)
 
 	scanner := bufio.NewScanner(file)
 
@@ -98,7 +125,7 @@ func main() {
 		close(inputCH)
 	}()
 
-	go createSwissSlice(cheeseCH)
+	go generateCheeseOverlay(overlayCH)
 
-	generateLine(inputCH, cheeseCH)
+	generateLine(inputCH, overlayCH)
 }
