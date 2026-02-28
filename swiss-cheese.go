@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strings"
 )
 
 const (
@@ -44,8 +45,39 @@ func generateLine(inputCH chan string, cheeseCH chan []bool) {
 			}
 		}
 
-		fmt.Println(out)
+		fmt.Println(cheeseify(out))
 	}
+}
+
+func cheeseify(s string) string {
+	const (
+		yellow = "\033[33m"
+		reset  = "\033[0m"
+	)
+
+	var b strings.Builder
+	inHash := false
+
+	for _, ch := range s {
+		if ch == '#' {
+			if !inHash {
+				b.WriteString(yellow)
+				inHash = true
+			}
+		} else {
+			if inHash {
+				b.WriteString(reset)
+				inHash = false
+			}
+		}
+		b.WriteRune(ch)
+	}
+
+	if inHash {
+		b.WriteString(reset)
+	}
+
+	return b.String()
 }
 
 func main() {
